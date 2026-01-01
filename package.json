@@ -1,0 +1,23 @@
+{
+  "name": "vhm_codex",
+  "private": true,
+  "workspaces": [
+    "backend",
+    "frontend",
+    "shared"
+  ],
+  "scripts": {
+    "setup": "npm install",
+    "dev": "concurrently \"npm:dev:backend\" \"npm:dev:frontend\"",
+    "dev:backend": "npm --workspace backend run dev",
+    "dev:frontend": "npm --workspace frontend run dev",
+    "build": "npm --workspace backend run build && npm --workspace frontend run build",
+    "lint": "npm --workspace backend run lint && npm --workspace frontend run lint",
+    "typecheck": "npm --workspace backend run typecheck && npm --workspace frontend run typecheck"
+  },
+  "devDependencies": {
+    "@emotion/react": "^11.11.4",
+    "@emotion/styled": "^11.11.5",
+    "concurrently": "^8.2.2"
+  }
+}

@@ -1,0 +1,210 @@
+// Prisma schema placeholder
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  reminders     MemorialReminder[]
+  contributions Contribution[]
+
+  @@map("users")
+}
+
+model Person {
+  id        String   @id @default(cuid())
+  firstName String
+  lastName  String
+  dateOfBirth DateTime?
+  dateOfDeath DateTime?
+  causeOfDeath String?
+  createdAt DateTime @default(now())
+
+  placeOfBirthId String?
+  placeOfDeathId String?
+  cemeteryId     String?
+
+  placeOfBirth Location? @relation("PersonBirthPlace", fields: [placeOfBirthId], references: [id])
+  placeOfDeath Location? @relation("PersonDeathPlace", fields: [placeOfDeathId], references: [id])
+  cemetery     Cemetery? @relation(fields: [cemeteryId], references: [id])
+
+  memorial      Memorial?
+  contributions Contribution[]
+  photos        Photo[]
+  familyRelationships FamilyRelationship[] @relation("PersonRelationships")
+  relatedRelationships FamilyRelationship[] @relation("RelatedPersonRelationships")
+
+  @@map("persons")
+}
+
+model Memorial {
+  id       String @id @default(cuid())
+  personId String @unique
+
+  person          Person            @relation(fields: [personId], references: [id], onDelete: Cascade)
+  remembrances    Remembrance[]
+  virtualOfferings VirtualOffering[]
+  reminders       MemorialReminder[]
+
+  @@map("memorials")
+}
+
+model Remembrance {
+  id         String   @id @default(cuid())
+  memorialId String
+  message    String
+  authorName String?
+  isPublic   Boolean  @default(true)
+  approved   Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  memorial Memorial @relation(fields: [memorialId], references: [id], onDelete: Cascade)
+
+  @@map("remembrances")
+}
+
+model VirtualOffering {
+  id          String      @id @default(cuid())
+  memorialId  String
+  offeringType OfferingType
+  message     String?
+  authorName  String?
+  createdAt   DateTime    @default(now())
+
+  memorial Memorial @relation(fields: [memorialId], references: [id], onDelete: Cascade)
+
+  @@map("virtual_offerings")
+}
+
+model MemorialReminder {
+  id        String   @id @default(cuid())
+  userId    String
+  memorialId String
+  title     String
+  date      DateTime
+  frequency ReminderFrequency @default(ONCE)
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  memorial Memorial @relation(fields: [memorialId], references: [id], onDelete: Cascade)
+
+  @@map("memorial_reminders")
+}
+
+model Contribution {
+  id          String              @id @default(cuid())
+  userId      String?
+  personId    String?
+  type        ContributionType
+  data        Json
+  status      ContributionStatus  @default(PENDING)
+  submittedAt DateTime            @default(now())
+
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+  person Person? @relation(fields: [personId], references: [id], onDelete: SetNull)
+
+  @@map("contributions")
+}
+
+model Location {
+  id        String @id @default(cuid())
+  name      String
+  city      String?
+  country   String
+
+  birthPersons Person[] @relation("PersonBirthPlace")
+  deathPersons Person[] @relation("PersonDeathPlace")
+  cemeteries   Cemetery[]
+
+  @@map("locations")
+}
+
+model Cemetery {
+  id         String @id @default(cuid())
+  name       String
+  locationId String
+
+  location Location @relation(fields: [locationId], references: [id])
+  persons  Person[]
+
+  @@map("cemeteries")
+}
+
+model Photo {
+  id         String   @id @default(cuid())
+  personId   String
+  url        String
+  thumbnailUrl String?
+  caption    String?
+  isPrimary  Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  person Person @relation(fields: [personId], references: [id], onDelete: Cascade)
+
+  @@map("photos")
+}
+
+model FamilyRelationship {
+  id              String   @id @default(cuid())
+  personId        String
+  relatedPersonId String
+  relationshipType RelationshipType
+  createdAt       DateTime @default(now())
+
+  person        Person @relation("PersonRelationships", fields: [personId], references: [id], onDelete: Cascade)
+  relatedPerson Person @relation("RelatedPersonRelationships", fields: [relatedPersonId], references: [id], onDelete: Cascade)
+
+  @@unique([personId, relatedPersonId, relationshipType])
+  @@map("family_relationships")
+}
+
+enum OfferingType {
+  CANDLE
+  FLOWER
+  INCENSE
+  PRAYER
+}
+
+enum ReminderFrequency {
+  ONCE
+  YEARLY
+  MONTHLY
+}
+
+enum ContributionType {
+  PERSON_CREATE
+  PERSON_UPDATE
+  REMEMBRANCE
+  OFFERING
+}
+
+enum ContributionStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum RelationshipType {
+  PARENT
+  CHILD
+  SPOUSE
+  SIBLING
+  GRANDPARENT
+  GRANDCHILD
+  AUNT_UNCLE
+  NIECE_NEPHEW
+  COUSIN
+  OTHER
+}
