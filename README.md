@@ -1,4 +1,4 @@
-# VHM Codex
+# VHM Wall
 
 Skeleton project for the Vietnamese Heritage Museum Memorial System.
 
